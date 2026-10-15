@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1 Official
+
+- Stable release of the terminal-style Windows desktop app.
+- Green transfer progress bar with rclone byte and file counts.
+- Activity indicator while scanning and completion status.
+- Windows application identity and compiled desktop shortcut icon.
+- Standalone EXE and ZIP with automatic rclone setup.
+- Verified packaged backup, exclusions, versioning, mirror, logs, and startup.
+
+
 ## 0.1b Terminal Update
 
 - Replaced default widget styling with a green-on-black terminal interface.

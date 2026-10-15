@@ -1,17 +1,17 @@
-# SyncForge 0.1b
+# SyncForge 0.1
 
 A Windows desktop GUI for rclone, built with Python's included Tkinter toolkit.
 
 ![SyncForge terminal-style Windows GUI](assets/syncforge-terminal.png)
 
-## Terminal update
+## Official release
 
-The 0.1b Terminal Update adds a phosphor-green and amber interface, monospace
+SyncForge 0.1 includes a phosphor-green and amber interface, monospace
 type, square panes, bracketed controls, and inverted hover states inspired by
 the [Terminal CLI design preset](https://www.designprompts.dev/terminal).
 
 Get the Windows ZIP or standalone EXE from
-[GitHub Releases](https://github.com/Anon0ne/SyncForge/releases/tag/v0.1b-terminal).
+[GitHub Releases](https://github.com/Anon0ne/SyncForge/releases/tag/v0.1).
 The ZIP includes the launcher that automatically installs rclone. The standalone
 EXE needs rclone installed already. Both include Python.
 
@@ -55,12 +55,12 @@ configuration, exclusions, preview, live logs, cancellation, older-version
 folders, and daily schedules. Remote folder browsing, a restore wizard,
 retention cleanup, installer packaging, and overlap prevention are future work.
 
-## Windows beta download
+## Windows release download
 
 Download the ZIP from GitHub Releases, extract it, and run Start SyncForge.cmd. The executable includes Python. Keep the extracted folder in a permanent location if you create schedules.
 
 ## Build from source
 
-Install Python 3, Pillow and PyInstaller, then run powershell -ExecutionPolicy Bypass -File build.ps1. Output is dist/SyncForge-0.1b-windows-x64.zip.
+Install Python 3, Pillow and PyInstaller, then run powershell -ExecutionPolicy Bypass -File build.ps1. Output is dist/SyncForge-0.1-windows-x64.zip.
 
-The icon was generated with OpenAI ImageGen. SyncForge is an independent GUI for rclone. Rclone is downloaded separately from its official distribution.
+SyncForge is an independent GUI for rclone. Rclone is downloaded separately from its official distribution.

@@ -12,7 +12,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
 from tkinter import font as tkfont
 
-VERSION = '0.1b'
+VERSION = '0.1'
 ASSETS = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent)) / 'assets'
 DATA = Path(os.environ.get('LOCALAPPDATA', Path.home())) / 'SyncForge'
 LEGACY_DATA = DATA.parent / 'RcloneDesk'
@@ -58,7 +58,7 @@ def command(job, preview=False):
     if not source or not destination or source.rstrip('/\\').casefold() == destination.rstrip('/\\').casefold():
         raise ValueError('Choose different, nonempty source and destination paths.')
     args = [rclone_executable(), job['mode'], source, destination,
-            '--stats', '1s', '--stats-one-line', '--log-level', 'INFO']
+            '--stats', '1s', '--stats-one-line', '--log-level', 'INFO', '--use-json-log']
     if preview:
         args.append('--dry-run')
     for pattern in job.get('excludes', '').splitlines():
@@ -120,6 +120,9 @@ class App(tk.Tk):
                   indicatorbackground=[('selected', '#376347')])
         style.configure('Status.TLabel', foreground=amber, background=panel, padding=10)
         style.configure('Muted.TLabel', foreground=muted)
+        style.configure('Terminal.Horizontal.TProgressbar', background=green,
+                        troughcolor=field, bordercolor='#1f521f',
+                        lightcolor=green, darkcolor=green, thickness=12)
         header = ttk.Frame(self, padding=16)
         header.pack(fill='x')
         title = ttk.Frame(header)
@@ -177,6 +180,9 @@ class App(tk.Tk):
                        style='Primary.TButton' if label == 'Run backup' else 'TButton').pack(side='left', padx=2)
         self.status = ttk.Label(right, text='[READY] Preview a job before its first run.', style='Status.TLabel')
         self.status.pack(fill='x', pady=(0, 8))
+        self.progress = ttk.Progressbar(right, style='Terminal.Horizontal.TProgressbar',
+                                        mode='determinate', maximum=100)
+        self.progress.pack(fill='x', pady=(0, 10))
         ttk.Label(right, text='[ TRANSFER CONSOLE ]', style='Muted.TLabel').pack(anchor='w')
         self.output = tk.Text(right, height=13, bg=field, fg=green, font=(mono, 11), wrap='word',
                               insertbackground=amber, highlightbackground='#1f521f',
@@ -272,10 +278,20 @@ class App(tk.Tk):
             return
         process = self.process
         self.status.config(text='Preview running…' if preview else 'Backup running…')
+        self.preview_running = preview
+        self.progress.configure(mode='indeterminate', value=0)
+        self.progress.start(15)
         self.output.delete('1.0', 'end')
         def worker():
             for line in process.stdout:
-                self.events.put(('log', line))
+                try:
+                    entry = json.loads(line)
+                    stats = entry.get('stats', {})
+                    if stats:
+                        self.events.put(('progress', stats))
+                    self.events.put(('log', entry.get('msg', line).rstrip() + '\n'))
+                except (ValueError, TypeError, AttributeError):
+                    self.events.put(('log', line))
             self.events.put(('done', process.wait()))
         threading.Thread(target=worker, daemon=True).start()
 
@@ -293,8 +309,22 @@ class App(tk.Tk):
                     self.output.see('end')
                 elif kind == 'connections':
                     self.connections.config(text=value)
+                elif kind == 'progress':
+                    total = value.get('totalBytes', 0)
+                    transferred = value.get('bytes', 0)
+                    total_files = value.get('totalTransfers', 0)
+                    files = value.get('transfers', 0)
+                    if total > 0 or total_files > 0:
+                        fraction = transferred / total if total > 0 else files / total_files
+                        percent = max(0, min(100, fraction * 100))
+                        self.progress.stop()
+                        self.progress.configure(mode='determinate', value=percent)
+                        action = 'Preview' if self.preview_running else 'Backup'
+                        self.status.config(text=f'{action} running… {percent:.0f}% | {files}/{total_files} files')
                 elif kind == 'done':
                     self.process = None
+                    self.progress.stop()
+                    self.progress.configure(mode='determinate', value=100 if value == 0 else 0)
                     self.status.config(text='Completed successfully.' if value == 0 else f'Stopped with exit code {value}. See log.')
         except queue.Empty:
             pass
@@ -333,4 +363,9 @@ class App(tk.Tk):
 if __name__ == '__main__':
     if len(sys.argv) == 3 and sys.argv[1] == '--run-job':
         sys.exit(scheduled_run(sys.argv[2]))
+    if sys.platform == 'win32':
+        # Set before creating Tk's root so Windows groups the window as
+        # SyncForge rather than inheriting the Python host's taskbar identity.
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('SyncForge.Desktop')
     App().mainloop()
