@@ -10,6 +10,7 @@ import sys
 import threading
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, simpledialog
+from tkinter import font as tkfont
 
 VERSION = '0.1b'
 ASSETS = Path(getattr(sys, '_MEIPASS', Path(__file__).resolve().parent)) / 'assets'
@@ -84,62 +85,102 @@ class App(tk.Tk):
         self.title(f'SyncForge {VERSION} • Windows Backup Manager')
         if (ASSETS / 'syncforge.ico').exists():
             self.iconbitmap(str(ASSETS / 'syncforge.ico'))
-        self.geometry('1080x780')
-        self.minsize(850, 650)
+        self.geometry('1240x880')
+        self.minsize(1120, 800)
         self.jobs = read_jobs()
         self.process = None
         self.events = queue.Queue()
         style = ttk.Style(self)
         style.theme_use('clam')
-        style.configure('TButton', padding=7)
-        style.configure('TLabel', padding=3)
+        # A restrained phosphor-terminal palette, including native Tk widgets.
+        bg, panel, field = '#0a0a0a', '#101710', '#0a0a0a'
+        families = set(tkfont.families(self))
+        mono = next((name for name in ('JetBrains Mono', 'Fira Code', 'Consolas') if name in families), 'Courier New')
+        green, muted, amber = '#33ff00', '#8cba83', '#ffb000'
+        self.configure(background=bg)
+        self.option_add('*Font', (mono, 11))
+        self.option_add('*selectBackground', '#254d34')
+        self.option_add('*selectForeground', '#c4ffb5')
+        style.configure('.', background=bg, foreground=green, font=(mono, 11))
+        style.configure('TFrame', background=bg)
+        style.configure('TLabel', background=bg, foreground=green, padding=4)
+        style.configure('TButton', background=panel, foreground=green,
+                        bordercolor='#1f521f', lightcolor=panel, darkcolor=panel,
+                        padding=(8, 9), focusthickness=2, focuscolor=amber)
+        style.map('TButton', background=[('pressed', amber), ('active', green)],
+                  foreground=[('disabled', '#54705c'), ('pressed', bg), ('active', bg)])
+        style.configure('Primary.TButton', foreground=amber, bordercolor='#8b7441')
+        style.configure('TEntry', fieldbackground=field, foreground='#c4ffb5',
+                        insertcolor=amber, bordercolor='#1f521f', padding=7)
+        style.map('TEntry', bordercolor=[('focus', amber)],
+                  lightcolor=[('focus', amber)], darkcolor=[('focus', amber)])
+        style.configure('TRadiobutton', background=bg, foreground=green,
+                        indicatorbackground=field, indicatorforeground=amber, padding=5)
+        style.map('TRadiobutton', background=[('active', panel)],
+                  indicatorbackground=[('selected', '#376347')])
+        style.configure('Status.TLabel', foreground=amber, background=panel, padding=10)
+        style.configure('Muted.TLabel', foreground=muted)
         header = ttk.Frame(self, padding=16)
         header.pack(fill='x')
-        ttk.Label(header, text=f'SyncForge  {VERSION}', font=('Segoe UI', 24, 'bold')).pack(side='left')
-        ttk.Button(header, text='Connect storage', command=self.configure_storage).pack(side='right')
-        ttk.Button(header, text='Refresh connections', command=self.refresh_remotes).pack(side='right', padx=6)
-        self.connections = ttk.Label(self, text='Checking rclone…', padding=12)
+        title = ttk.Frame(header)
+        title.pack(side='left')
+        ttk.Label(title, text='> SYNCFORGE_', font=(mono, 27, 'bold')).pack(anchor='w')
+        ttk.Label(title, text=f'FILE TRANSFER CONTROL  /  v{VERSION}', style='Muted.TLabel').pack(anchor='w')
+        ttk.Button(header, text='[ CONNECT STORAGE ]', command=self.configure_storage).pack(side='right')
+        ttk.Button(header, text='[ REFRESH ]', command=self.refresh_remotes).pack(side='right', padx=6)
+        self.connections = ttk.Label(self, text='Checking rclone…', padding=12, style='Status.TLabel')
         self.connections.pack(fill='x')
         body = ttk.Frame(self, padding=12)
         body.pack(fill='both', expand=True)
         left = ttk.Frame(body)
         left.pack(side='left', fill='y', padx=(0, 16))
-        ttk.Label(left, text='SAVED JOBS', font=('Segoe UI', 10, 'bold')).pack(anchor='w')
-        self.list = tk.Listbox(left, width=25, exportselection=False)
+        ttk.Label(left, text='[ JOB QUEUE ]', font=(mono, 11, 'bold')).pack(anchor='w')
+        self.list = tk.Listbox(left, width=23, exportselection=False,
+                               background=panel, foreground=green, font=(mono, 11),
+                               selectbackground='#254d34', selectforeground='#c4ffb5',
+                               highlightbackground='#1f521f', highlightcolor=amber,
+                               highlightthickness=1, borderwidth=0, activestyle='none')
         self.list.pack(fill='both', expand=True)
         self.list.bind('<<ListboxSelect>>', self.select_job)
-        ttk.Button(left, text='+ New job', command=self.new_job).pack(fill='x', pady=6)
+        ttk.Button(left, text='[ + NEW JOB ]', command=self.new_job).pack(fill='x', pady=6)
         right = ttk.Frame(body)
         right.pack(side='left', fill='both', expand=True)
         self.fields = {}
         for key, title in [('name', 'Job name'), ('source', 'Source — local folder or remote:path'),
                            ('destination', 'Destination — local folder or remote:path'),
                            ('versions', 'Optional older-version folder — outside destination')]:
-            ttk.Label(right, text=title).pack(anchor='w')
+            ttk.Label(right, text='> ' + title).pack(anchor='w')
             row = ttk.Frame(right)
             row.pack(fill='x')
             value = tk.StringVar()
             self.fields[key] = value
             ttk.Entry(row, textvariable=value).pack(side='left', fill='x', expand=True)
             if key != 'name':
-                ttk.Button(row, text='Folder…', command=lambda v=value: self.choose_folder(v)).pack(side='right')
+                ttk.Button(row, text='[ DIR ]', command=lambda v=value: self.choose_folder(v)).pack(side='right')
         self.mode = tk.StringVar(value='copy')
         modes = ttk.Frame(right, padding=(0, 8))
         modes.pack(fill='x')
         ttk.Radiobutton(modes, text='Backup (preserve destination files)', variable=self.mode, value='copy').pack(anchor='w')
         ttk.Radiobutton(modes, text='Mirror (delete destination extras)', variable=self.mode, value='sync').pack(anchor='w')
         ttk.Label(right, text='Exclude patterns — one per line, e.g. *.tmp').pack(anchor='w')
-        self.excludes = tk.Text(right, height=3, font=('Consolas', 10))
+        self.excludes = tk.Text(right, height=3, font=(mono, 11),
+                                background=field, foreground=green, insertbackground=amber,
+                                highlightbackground='#1f521f', highlightcolor=amber,
+                                highlightthickness=1, borderwidth=0, padx=8, pady=6)
         self.excludes.pack(fill='x')
         actions = ttk.Frame(right, padding=(0, 10))
         actions.pack(fill='x')
         for label, action in [('Save job', self.save), ('Preview', lambda: self.run(True)),
                               ('Run backup', lambda: self.run(False)), ('Cancel', self.cancel),
                               ('Schedule daily', self.schedule)]:
-            ttk.Button(actions, text=label, command=action).pack(side='left', padx=2)
-        self.status = ttk.Label(right, text='Ready. Preview a job before its first run.')
-        self.status.pack(anchor='w')
-        self.output = tk.Text(right, height=13, bg='#142031', fg='#dce8f5', font=('Consolas', 10), wrap='word')
+            ttk.Button(actions, text='[ ' + label.upper() + ' ]', command=action,
+                       style='Primary.TButton' if label == 'Run backup' else 'TButton').pack(side='left', padx=2)
+        self.status = ttk.Label(right, text='[READY] Preview a job before its first run.', style='Status.TLabel')
+        self.status.pack(fill='x', pady=(0, 8))
+        ttk.Label(right, text='[ TRANSFER CONSOLE ]', style='Muted.TLabel').pack(anchor='w')
+        self.output = tk.Text(right, height=13, bg=field, fg=green, font=(mono, 11), wrap='word',
+                              insertbackground=amber, highlightbackground='#1f521f',
+                              highlightcolor=amber, highlightthickness=1, borderwidth=0, padx=12, pady=10)
         self.output.pack(fill='both', expand=True)
         self.current_id = None
         self.update_list()

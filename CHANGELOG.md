@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1b Terminal Update
+
+- Replaced default widget styling with a green-on-black terminal interface.
+- Added amber accents, monospace typography, bracketed buttons, and square panes.
+- Added an actual GUI screenshot to the README.
+- Published a standalone Windows EXE alongside the launcher ZIP.
+- Verified the compiled job runner with isolated backup, exclusion, versioning,
+  mirror, log, and GUI startup checks (`python test_executable.py`).
+
 ## 0.1b
 
 Initial public beta of SyncForge for Windows.

@@ -2,6 +2,24 @@
 
 A Windows desktop GUI for rclone, built with Python's included Tkinter toolkit.
 
+![SyncForge terminal-style Windows GUI](assets/syncforge-terminal.png)
+
+## Terminal update
+
+The 0.1b Terminal Update adds a phosphor-green and amber interface, monospace
+type, square panes, bracketed controls, and inverted hover states inspired by
+the [Terminal CLI design preset](https://www.designprompts.dev/terminal).
+
+Get the Windows ZIP or standalone EXE from
+[GitHub Releases](https://github.com/Anon0ne/SyncForge/releases/tag/v0.1b-terminal).
+The ZIP includes the launcher that automatically installs rclone. The standalone
+EXE needs rclone installed already. Both include Python.
+
+Tested the compiled application with temporary files: copying, exclusions,
+updates, older-version preservation, destination-only file preservation in
+backup mode, mirror deletion, job logs, and startup. Cloud transfers and Windows
+Task Scheduler execution have not been verified in this release.
+
 ## Run
 
 1. Install Python 3 with Tkinter and enable **Add Python to PATH**.
