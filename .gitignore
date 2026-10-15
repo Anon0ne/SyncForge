@@ -1,0 +1,8 @@
+__pycache__/
+tools/
+rclone-download.zip
+build/
+dist/
+*.spec
+*.log
+.venv/
